@@ -383,14 +383,35 @@ prompt() {
   fi
 }
 run_yt_dlp() {
-  if command -v "gum" &>/dev/null; then
-    gum spin --show-output -- yt-dlp "$1" -J --flat-playlist --playlist-start 1 --playlist-end "$NO_OF_SEARCH_RESULTS" "${PREFERRED_BROWSER[@]}"
-  else
-    echo "Loading..."
-    yt-dlp "$1" -J --flat-playlist --playlist-start 1 --playlist-end "$NO_OF_SEARCH_RESULTS" "${PREFERRED_BROWSER[@]}"
+  if [ -z "$1" ]; then
+    echo "Error: No URL or search term provided to yt-dlp."
+    return 1
   fi
-}
 
+  temp_output=$(mktemp)
+  trap 'rm -f "$temp_output"' EXIT
+
+  yt-dlp "$1" -J --flat-playlist --playlist-start 1 --playlist-end "$NO_OF_SEARCH_RESULTS" "${PREFERRED_BROWSER[@]}" >"$temp_output" 2>/dev/null
+  yt_dlp_status=$?
+
+  if [ $yt_dlp_status -ne 0 ]; then
+    echo "Error: yt-dlp encountered an issue. Please check your input."
+    rm -f "$temp_output"
+    return 1
+  fi
+
+  if ! jq empty "$temp_output" >/dev/null 2>&1; then
+    echo "Error: yt-dlp returned invalid data. Please try again."
+    echo "Debug info: $(cat "$temp_output")"
+    rm -f "$temp_output"
+    return 1
+  fi
+
+  cat "$temp_output"
+  rm -f "$temp_output"
+  trap - EXIT
+  return 0
+}
 core_dep_ch() {
   ! command -v "yt-dlp" &>/dev/null && echo yt-dlp is not installed and is a core dep please install it to proceed && exit 1
   ! command -v "jq" &>/dev/null && echo jq is not installed and is a core dep please install it to proceed && exit 1
@@ -519,9 +540,20 @@ ${RED}󰈆${RESET}  Exit
     ;;
   Search)
     clear
-    search_Term="$(prompt "Enter term to search for" | jq -Rr '@uri')"
-    url="$uploader_url_base/search?query=$search_Term"
+    search_Term="$(prompt "Enter term to search for")"
+
+    if [ -z "$search_Term" ]; then
+      echo "Error: Search term cannot be empty."
+      return 1
+    fi
+
+    url="ytsearch:$search_Term"
     search_results=$(run_yt_dlp "$url")
+
+    if ! echo "$search_results" | jq empty 2>/dev/null; then
+      echo "Error: Invalid search results received. Please try again."
+      return 1
+    fi
     BACK="channels_explorer"
     ;;
   Exit)
@@ -568,11 +600,31 @@ ${RED}󰈆${RESET}  Exit
     search_results=$(run_yt_dlp "$url")
     ;;
   Search)
-    clear
-    search_Term="$(prompt "Enter term to search for" | jq -Rr '@uri')"
-    url="https://www.youtube.com/results?search_query=$search_Term&sp=EgIQAQ%253D%253D"
-    search_results=$(run_yt_dlp "$url")
-    ;;
+  clear
+  search_Term="$(prompt "Enter term to search for")"
+
+  if [ -z "$search_Term" ]; then
+    echo "Error: Search term cannot be empty."
+    return 1
+  fi
+
+  url="ytsearch:$search_Term"
+  search_results=$(run_yt_dlp "$url")
+
+  if [ $? -ne 0 ]; then
+    echo "Error: Unable to fetch search results. Check your input or network connection."
+    return 1
+  fi
+
+  if ! echo "$search_results" | jq empty >/dev/null 2>&1; then
+    echo "Error: yt-dlp returned invalid data. Debug information:"
+    echo "$search_results"
+    return 1
+  fi
+
+  echo "Search Results:"
+  echo "$search_results" | jq '.entries[].title' -r
+  ;;
   "Subscription Feed")
     url="https://www.youtube.com/feed/subscriptions"
     search_results=$(run_yt_dlp "$url")
