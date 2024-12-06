@@ -56,7 +56,7 @@ Browse YouTube from your terminal.
 nix profile install github:Benexl/yt-x
 
 # latest release
-curl -sL "https://raw.githubusercontent.com/Benexl/yt-x/refs/tags/v0.2.0/yt-x" -o ~/.local/bin/yt-x && chmod +x ~/.local/bin/yt-x
+curl -sL "https://raw.githubusercontent.com/Benexl/yt-x/refs/tags/0.3.0/yt-x" -o ~/.local/bin/yt-x && chmod +x ~/.local/bin/yt-x
 
 # Development version
 curl -sL "https://raw.githubusercontent.com/Benexl/yt-x/refs/heads/master/yt-x" -o ~/.local/bin/yt-x && chmod +x ~/.local/bin/yt-x
@@ -88,6 +88,26 @@ yt-x
 
 # edit your config
 yt-x -e
+```
+
+## TIPS
+
+To enable imports of subscriptions and viewing of private playlists and videos
+set your preferred browser in your config file
+
+For Example:
+```ini
+PREFERRED_BROWSER: chrome
+```
+
+To enable mpv to directly access private playlists and videos
+add something like this in your mpv.conf
+
+```ini
+ytdl-raw-options=cookies-from-browser=chrome
+
+# You can also set the quality
+ytdl-format="best[height<=1080]/bestvideo[height<=1080]+bestaudio/best"
 ```
 
 ## Define Custom Playlists
@@ -126,7 +146,7 @@ Pr's are highly welcomed.
 
 - [x] Fix the channel sub menu by making it conform to the new preview logic
 - [x] Fix the channel image preview
-- [ ] Fix bug where going back in the channels menu may result into weird behavior
+- [x] Fix bug where going back in the channels menu may result into weird behavior
 
 **Documentation and refactor:**
 
