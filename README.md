@@ -9,11 +9,15 @@
 Browse YouTube from your terminal.
 Plus other sites yt-dlp supports.
 
+Inspired by [magic-tape](https://gitlab.com/christosangel/magic-tape)
+
 [yt-x-github-demo.webm](https://github.com/user-attachments/assets/08e491cc-fc91-4f13-849b-6ce8e78bf6f0)
 
 <details>
-<summary>Workflow Demo</summary>
-https://www.reddit.com/r/unixporn/comments/1hou2s7/oc_ytx_v040_workflow_new_year_new_way_to_explore/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
+<summary>Full Demo</summary>
+  
+[yt-x-full-github-demo.webm](https://github.com/user-attachments/assets/06e388c4-4399-4358-a6cc-68045db48177)
+
 </details>
 
 ## Features
@@ -26,6 +30,7 @@ https://www.reddit.com/r/unixporn/comments/1hou2s7/oc_ytx_v040_workflow_new_year
 - **Saved Channels**: Bookmark your favorite channels for quick access, with support for importing existing subscriptions.
 - **Saved Videos**: Save videos to watch later.
 - **Mixes**: Generate and explore YouTube song mixes.
+- **Yt-x Shell:** Run custom yt-dlp and mpv commands for downloading and viewing videos and playlists
 - **Custom Playlists**: Save playlists for easier access.
 - **Download Management**: Download videos, audio, and playlists using `yt-dlp`.
 - **History & Recents**: Track your recent videos and search history.
@@ -36,21 +41,56 @@ https://www.reddit.com/r/unixporn/comments/1hou2s7/oc_ytx_v040_workflow_new_year
   - Shell completions for `bash`, `zsh`, and `fish`.
   - Desktop entry generation for easy access.
 
-## Installation
+## 📥 Installation
 
 ![Linux/BSD](https://img.shields.io/badge/-Linux/BSD-red.svg?style=for-the-badge&logo=linux)
 ![Arch Linux](https://img.shields.io/badge/-Arch_Linux-black.svg?style=for-the-badge&logo=archlinux)
 ![MacOS](https://img.shields.io/badge/-MacOS-lightblue.svg?style=for-the-badge&logo=apple)
 ![Android](https://img.shields.io/badge/-Android-green.svg?style=for-the-badge&logo=android)
 
-```bash
-# NixOS
-nix profile install github:Benexl/yt-x
+### ❄️ NixOS or Home Manager
 
-# cross-platform
+### <samp>On NixOS, you can install packages using two main methods:</samp>
+
+1. **Imperative/Direct installation**:
+```bash
+nix profile install github:Benexl/yt-x
+```
+#
+2. **Declarative/Config-based**:
+
+    2.1 Add the following to your `flake.nix`:
+
+    ```nix
+    inputs = {
+      yt-x.url = "github:Benexl/yt-x";
+      ...
+    }
+    ```
+
+    2.2 Then, add Yt-x to your packages:
+    > For system wide installation in *configuration.nix*
+    ```nix
+    environment.systemPackages = with pkgs; [
+      inputs.yt-x.packages."${system}".default
+    ];
+    ```
+
+    > For user level installation in *home.nix*
+    ```nix
+    home.packages = with pkgs; [
+      inputs.yt-x.packages."${system}".default
+    ];
+    ```
+
+### Cross-platform
+
+
+```bash
 # NOTE: ~/.local/bin should exist and be in path for this to work
 curl -sL "https://raw.githubusercontent.com/Benexl/yt-x/refs/heads/master/yt-x" -o ~/.local/bin/yt-x && chmod +x ~/.local/bin/yt-x
 ```
+
 
 ## Dependencies
 
@@ -63,15 +103,21 @@ curl -sL "https://raw.githubusercontent.com/Benexl/yt-x/refs/heads/master/yt-x" 
 - [mpv](https://mpv.io/) - Video and audio playback.
 - [ffmpeg](https://www.ffmpeg.org/) - Proper HLS stream downloading.
 - [bash](https://www.gnu.org/software/bash/) - Script interpreter.
+- [nerdfont](https://www.nerdfonts.com/) - for the icons
 
 ### Optional
 
 - [gum](https://github.com/charmbracelet/gum) - Enhanced UI (highly recommended).
-- [chafa](https://github.com/hpjansson/chafa) - Cross-terminal image rendering (highly recommended).
-- [icat](https://sw.kovidgoyal.net/kitty/) - Image rendering.
-- [imgcat](https://github.com/danielgatis/imgcat) - Image rendering.
 - [rofi](https://github.com/davatorium/rofi) - Alternate UI.
-
+- **terminal image viewer:**
+  - [chafa](https://github.com/hpjansson/chafa) - Cross-terminal image rendering (recommended).
+  - [icat](https://sw.kovidgoyal.net/kitty/kittens/icat/) - recommended for kitty terminal and ghostty
+  - [imgcat](https://github.com/danielgatis/imgcat)
+- **terminal with image rendering support:**
+  - [kitty](https://sw.kovidgoyal.net/kitty/) - currently has the best image rendering capabilities (recommended)
+  - [wezterm](https://wezfurlong.org/wezterm/index.html)
+  - [ghostty](https://github.com/ghostty-org/ghostty)
+   
 ---
 
 ## Usage
@@ -82,6 +128,11 @@ yt-x
 
 # Edit configuration
 yt-x -e
+
+# load an extension
+# extensions are located at ~/.config/yt-x/extensions
+# the extension name is the name of a file in the extensions folder
+yt-x -x <extension-name>
 
 # Specify player at runtime
 yt-x --player <mpv/vlc>
@@ -171,6 +222,32 @@ Define custom playlists by editing `~/.config/yt-x/custom_playlists.json` (or us
     "playlistWatchUrl": "https://www.youtube.com/watch?list=<playlist-id>"
   }
 ]
+```
+## Theming
+To change the default colorscheme, set `YT_X_FZF_OPTS` env var and give it custom fzf opts, eg-
+
+.bashrc/.zshrc
+```
+#yt-x
+export YT_X_FZF_OPTS=$FZF_DEFAULT_OPTS'
+--color=fg:#e0def4,fg+:#e0def4,bg:#232136,bg+:#44415a
+--color=hl:#3e8fb0,hl+:#9ccfd8,info:#f6c177,marker:#3e8fb0
+--color=prompt:#eb6f92,spinner:#c4a7e7,pointer:#c4a7e7,header:#3e8fb0
+--color=border:#44415a,label:#ea9a97,query:#f6c177
+--border="rounded" --border-label="" --preview-window="border-rounded" --prompt="> "
+--marker=">" --pointer="◆" --separator="─" --scrollbar="│"'
+```
+
+config.fish
+```
+#yt-x
+set -gx YT_X_FZF_OPTS $FZF_DEFAULT_OPTS'
+--color=fg:#e0def4,fg+:#e0def4,bg:#232136,bg+:#44415a
+--color=hl:#3e8fb0,hl+:#9ccfd8,info:#f6c177,marker:#3e8fb0
+--color=prompt:#eb6f92,spinner:#c4a7e7,pointer:#c4a7e7,header:#3e8fb0
+--color=border:#44415a,label:#ea9a97,query:#f6c177
+--border="rounded" --border-label="" --preview-window="border-rounded" --prompt="> "
+--marker=">" --pointer="◆" --separator="─" --scrollbar="│"'
 ```
 
 ## Contribution
